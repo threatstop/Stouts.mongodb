@@ -3,6 +3,9 @@
 - include: install.deb.yml
   when: ansible_os_family == 'Debian' and mongodb_install
 
+- include: install.rhel.yml
+  when: ansible_os_family == 'RedHat' and mongodb_install
+
 - include: configure.yml
   when: mongodb_install
 
