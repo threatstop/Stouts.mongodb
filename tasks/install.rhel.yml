@@ -2,17 +2,10 @@
 
 - include_vars: "{{ansible_distribution}}.yml"
 
-- name: Add APT key
-  apt_key: url=http://docs.mongodb.org/10gen-gpg-key.asc id=7F0CEB10
-  when: '"mongodb-org" in mongodb_package'
+- name: bootstrap epel-release install
+  copy: src=mongodb-org-3.0.repo
+        dest=/etc/yum.repos.d/
+        owner=root group=root mode=0644
 
-- name: Add APT repository
-  apt_repository: repo="{{mongodb_repository}}" update_cache=yes
-  when: '"mongodb-org" in mongodb_package'
-
-- name: Install MongoDB package
-  apt: pkg={{mongodb_package}} state=present
-
-- name: Install additional packages
-  apt: pkg={{item}}
-  with_items: mongodb_additional_packages
+- name: install the latest version of MongoDB
+  yum: name=mongodb-org state=present
