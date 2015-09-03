@@ -1,5 +1,27 @@
 ---
 
-- include: mongodb.yml
-  when: mongodb_enabled
-  tags: [mongodb]
+- name: Set is_mongo_master
+  set_fact: 
+    is_mongo_master: "{{(inventory_hostname in groups['mongo_master']) | ternary(True, False)}}"
+
+
+- name: Disable Transparent Hugepage
+  include: transparent_hugepage.yaml
+
+- name: Install Mongodb
+  include: install.deb.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Configure Mongodb
+  include: configure.yml
+
+- name: Setup Authentication
+  include: auth_initialization.yml
+  when: mongodb_conf_auth and is_mongo_master == "True"
+
+- include: replication.yml
+  when: mongodb_conf_replSet != ''
+
+#- name: Setup MMS
+#  include: mms-agent.yml
+#  when: mongodb_mms_api_key != ""

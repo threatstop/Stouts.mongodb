@@ -1,26 +1,49 @@
 ---
 
-- name: Configure mongodb
-  template: src=mongod.conf.j2 dest=/etc/mongod.conf owner=root group=root mode=0644
-  notify: mongodb restart
+- name: Create keyFile
+  copy:
+    dest: "{{ mongodb_conf_keyFile }}"
+    content: "{{ mongodb_keyfile_content }}"
+    owner: "{{ mongodb_user }}"
+    group: "root"
+    mode: 0600
+  when: mongodb_conf_replSet != ''
+
+- name: 
+  set_fact:
+    mongodb_install_phase: True
 
 - name: Configure log rotation
   template: src=logrotate.conf.j2 dest=/etc/logrotate.d/mongodb.conf
   when: mongodb_logrotate
 
-- name: Create mongodb user
-  user: name={{mongodb_user}} group={{mongodb_user}}
+- name: set mongodb gid
+  group: name=mongodb gid={{ mongodb_gid }} state=present
+  when: mongodb_gid
 
-- name: Configure database directory
-  file: state=directory path={{ mongodb_conf_dbpath }} owner={{mongodb_user}} group={{mongodb_user}} mode=0755
+- name: set mongodb uid
+  user: name=mongodb uid={{ mongodb_uid }} group=mongodb state=present
+  when: mongodb_uid
 
-- name: Configure log directory
-  file: state=directory path={{ mongodb_conf_logpath | dirname }} owner={{mongodb_user}} group={{mongodb_user}} mode=0755
+- name: reset mongodb folder and subfolders with new uid
+  file: path={{ mongodb_conf_dbpath }} owner=mongodb group=mongodb follow=yes recurse=yes state=directory
+  when: mongodb_uid
 
-- name: Run mongoshell commands
-  command: mongo {{ item.key }} --eval "{{ item.value|join('\n') }}"
-  with_dict: mongodb_shell
+- name: Create log dir if missing
+  file: state=directory recurse=yes dest={{ mongodb_conf_logpath|dirname }} owner={{ mongodb_user }} group={{mongodb_user}} mode=0755
 
-- name: Ensure mongodb is started
-  service: name={{ mongodb_daemon_name }} state=started enabled=yes
-  changed_when: False
+- name: Check than logfile exists
+  stat: path={{ mongodb_conf_logpath }}
+  register: logfile_stat
+
+- name: Create log if missing
+  file: state=touch dest={{ mongodb_conf_logpath }} owner={{ mongodb_user }} group={{mongodb_user}} mode=0755
+  when: logfile_stat is defined and not logfile_stat.stat.exists
+
+- name: Configure mongodb
+  template: src=mongod.conf.j2 dest=/etc/mongod.conf backup=yes owner=root group=root mode=0644
+  register: config_result
+
+- name: mongodb restart
+  service: name={{ mongodb_daemon_name }} state=restarted
+  when: config_result|changed and mongodb_manage_service

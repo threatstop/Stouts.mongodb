@@ -1,0 +1,14 @@
+rs.initiate(
+    {
+    _id : "{{mongodb_conf_replSet}}",
+     members : [
+        {% for servers in mongo_replica_set %}
+            {_id : {{servers.id}}, host : "{{servers.host}}", priority: {{servers.priority}}}{% if not loop.last %},{% endif%}
+        {% endfor %}
+     ]
+    }
+)
+
+
+
+printjson(rs.status())

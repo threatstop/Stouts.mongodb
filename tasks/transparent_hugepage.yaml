@@ -1,0 +1,5 @@
+# tasks file for mongodb_replica_set
+- name: Create the init.d script
+  template: src=disable_hugepages.sh.j2 dest=/etc/init.d/disable-transparent-hugepages owner=root group=root mode=755
+- name: Enable the script
+  service: name=disable-transparent-hugepages enabled=yes

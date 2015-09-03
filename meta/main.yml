@@ -1,18 +1,26 @@
 ---
 
+version:  1.4.4
 dependencies: []
 
 galaxy_info:
-  author: klen
-  company: Stouts
-  description: Manage MongoDB (MMS)
-  license: MIT
+  author: Threatstop forked from other forks
+  company: 2GIS
+  description: Manage MongoDB with authentication
+  license: GPLv2
+  min_ansible_version: 1.8
   platforms:
   - name: Ubuntu
     versions:
-    - all
+    - trusty
   - name: Debian
     versions:
     - wheezy
+    - jessie
+  - name: EL
+    versions:
+    - 6
+    - 7
   categories:
+  - database
   - database:nosql

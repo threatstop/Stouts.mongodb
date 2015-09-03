@@ -1,0 +1,25 @@
+---
+
+- name: Set Facts for Post install phase
+  set_fact:
+    mongodb_install_phase: False
+
+- name: Configure mongodb with replSet option
+  template: src=mongod.conf.j2 dest=/etc/mongod.conf backup=yes owner=root group=root mode=0644
+  register: config_result
+
+- name: mongodb restart
+  service: name={{ mongodb_daemon_name }} state=restarted
+  when: config_result|changed and mongodb_manage_service
+
+- name: Pause for mongodb restart
+  pause: seconds=5
+  when: config_result.changed
+
+- name: Create the file for initalizing replica set
+  template: src=init_rep_set.j2 dest=/tmp/init_rep_set.js owner={{owner}} group={{group}}
+  when: is_mongo_master == "True"
+
+- name: Setup for replica set
+  shell: /usr/bin/mongo --port "{{ mongodb_conf_port }}" -u "{{mongodb_root_admin_name}}" -p "{{mongodb_root_admin_password}}" admin /tmp/init_rep_set.js
+  when: is_mongo_master == "True"
